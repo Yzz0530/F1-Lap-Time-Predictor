@@ -7,24 +7,15 @@ warnings.filterwarnings("ignore")
 
 fastf1.Cache.enable_cache("C:/F1_CACHE")
 
-RAW_PATH = "../data/all_races_2025.csv"
+RAW_PATH = "../data/all_races_2026.csv"
 OUT_PATH = "../data/all_races_master.csv"
 
-# Column mappings from raw fastf1 data
-RACE_MAP = {
-    "Bahrain Grand Prix": "Bahrain", "Saudi Arabian Grand Prix": "Jeddah",
-    "Australian Grand Prix": "Australia", "Japanese Grand Prix": "Japan",
-    "Chinese Grand Prix": "China", "Miami Grand Prix": "Miami",
-    "Emilia Romagna Grand Prix": "Imola", "Monaco Grand Prix": "Monaco",
-    "Spanish Grand Prix": "Spain", "Canadian Grand Prix": "Canada",
-    "Austrian Grand Prix": "Austria", "British Grand Prix": "Britain",
-    "Hungarian Grand Prix": "Hungary", "Belgian Grand Prix": "Belgium",
-    "Dutch Grand Prix": "Netherlands", "Italian Grand Prix": "Italy",
-    "Azerbaijan Grand Prix": "Azerbaijan", "Singapore Grand Prix": "Singapore",
-    "United States Grand Prix": "USA", "Mexico City Grand Prix": "Mexico",
-    "São Paulo Grand Prix": "Brazil", "Las Vegas Grand Prix": "Las Vegas",
-    "Qatar Grand Prix": "Qatar", "Abu Dhabi Grand Prix": "Abu Dhabi"
-}
+# Build race name -> location map dynamically from the fastf1 schedule
+schedule = fastf1.get_event_schedule(2026)
+RACE_MAP = {}
+for _, r in schedule.iterrows():
+    if r["EventFormat"] != "testing":
+        RACE_MAP[r["EventName"]] = r["Location"]
 
 print("Loading raw data...")
 df = pd.read_csv(RAW_PATH)
@@ -71,7 +62,7 @@ all_races = df["Race"].unique()
 for i, race in enumerate(all_races):
     try:
         short_name = RACE_MAP.get(race, race.split()[0])
-        session = fastf1.get_session(2025, short_name, "R")
+        session = fastf1.get_session(2026, short_name, "R")
         session.load(laps=False, telemetry=False, weather=True)
         wd = session.weather_data.copy()
         wd["Race"] = race
