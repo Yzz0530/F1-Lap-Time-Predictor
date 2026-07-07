@@ -1,6 +1,8 @@
 __pycache__/
 *.pyc
-.env
-streamlit/
+.pytest_cache/
+.cache/
 cache/
-
+.env
+.streamlit/secrets.toml
+.DS_Store

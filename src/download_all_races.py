@@ -2,23 +2,27 @@ import fastf1
 import pandas as pd
 import os
 
-os.makedirs("../cache", exist_ok=True)
-os.makedirs("../data", exist_ok=True)
+BASE: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CACHE_DIR: str = os.path.join(BASE, "cache")
+DATA_DIR: str = os.path.join(BASE, "data")
 
-fastf1.Cache.enable_cache("../cache")
+os.makedirs(CACHE_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
 
-YEAR = 2026
+fastf1.Cache.enable_cache(CACHE_DIR)
 
-schedule = fastf1.get_event_schedule(YEAR)
-today = pd.Timestamp.now()
+YEAR: int = 2026
+
+schedule: pd.DataFrame = fastf1.get_event_schedule(YEAR)
+today: pd.Timestamp = pd.Timestamp.now()
 schedule = schedule[~schedule["EventFormat"].isin(["testing", None])]
 schedule = schedule[schedule["EventDate"] <= today]
-races = schedule["EventName"].tolist()
+races: list[str] = schedule["EventName"].tolist()
 print(f"Found {len(races)} completed race events in {YEAR}:")
 for r in races:
     print(f"  - {r}")
 
-all_laps = []
+all_laps: list[pd.DataFrame] = []
 for race in races:
     try:
         print(f"\nLoading {race}...")
@@ -31,8 +35,8 @@ for race in races:
     except Exception as e:
         print(f"Failed {race}: {e}")
 
-df = pd.concat(all_laps, ignore_index=True)
-file_path = f"../data/all_races_{YEAR}.csv"
+df: pd.DataFrame = pd.concat(all_laps, ignore_index=True)
+file_path: str = os.path.join(DATA_DIR, f"all_races_{YEAR}.csv")
 df.to_csv(file_path, index=False)
 print("\nDONE")
 print("Total laps:", len(df))

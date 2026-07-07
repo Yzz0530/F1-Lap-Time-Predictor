@@ -3,22 +3,28 @@ import numpy as np
 import fastf1
 import os
 import warnings
+from typing import Any
+
 warnings.filterwarnings("ignore")
 
-fastf1.Cache.enable_cache("../cache")
+BASE: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CACHE_DIR: str = os.path.join(BASE, "cache")
+DATA_DIR: str = os.path.join(BASE, "data")
 
-RAW_PATH = "../data/all_races_2026.csv"
-OUT_PATH = "../data/all_races_master.csv"
+fastf1.Cache.enable_cache(CACHE_DIR)
+
+RAW_PATH: str = os.path.join(DATA_DIR, "all_races_2026.csv")
+OUT_PATH: str = os.path.join(DATA_DIR, "all_races_master.csv")
 
 # Build race name -> location map dynamically from the fastf1 schedule
-schedule = fastf1.get_event_schedule(2026)
-RACE_MAP = {}
+schedule: pd.DataFrame = fastf1.get_event_schedule(2026)
+RACE_MAP: dict[str, str] = {}
 for _, r in schedule.iterrows():
     if r["EventFormat"] != "testing":
         RACE_MAP[r["EventName"]] = r["Location"]
 
 print("Loading raw data...")
-df = pd.read_csv(RAW_PATH)
+df: pd.DataFrame = pd.read_csv(RAW_PATH)
 print(f"Raw shape: {df.shape}")
 
 # Parse timedelta columns
@@ -54,11 +60,64 @@ else:
 # Qualifying vs race stint flag (based on TyreLife = 0 or 1)
 df["IsStartLap"] = (df["TyreLife"] <= 1).astype(int)
 
+# --- Circuit features ---
+print("Loading circuit metadata...")
+circuits_path = os.path.join(DATA_DIR, "circuits_metadata.csv")
+circuits_df = pd.read_csv(circuits_path)
+
+# Map Race name -> Circuit name
+race_to_circuit = {
+    "Bahrain Grand Prix": "Bahrain International Circuit",
+    "Saudi Arabian Grand Prix": "Jeddah Corniche Circuit",
+    "Australian Grand Prix": "Albert Park Circuit",
+    "Azerbaijan Grand Prix": "Baku City Circuit",
+    "Spanish Grand Prix": "Circuit de Barcelona-Catalunya",
+    "Monaco Grand Prix": "Circuit de Monaco",
+    "Canadian Grand Prix": "Circuit Gilles Villeneuve",
+    "British Grand Prix": "Silverstone Circuit",
+    "Austrian Grand Prix": "Red Bull Ring",
+    "Hungarian Grand Prix": "Hungaroring",
+    "Belgian Grand Prix": "Circuit de Spa-Francorchamps",
+    "Dutch Grand Prix": "Circuit Zandvoort",
+    "Italian Grand Prix": "Monza",
+    "Singapore Grand Prix": "Marina Bay Street Circuit",
+    "Japanese Grand Prix": "Suzuka International Racing Course",
+    "Qatar Grand Prix": "Losail International Circuit",
+    "United States Grand Prix": "Circuit of the Americas",
+    "Mexico City Grand Prix": "Autodromo Hermanos Rodriguez",
+    "São Paulo Grand Prix": "Interlagos",
+    "Las Vegas Grand Prix": "Las Vegas Strip Circuit",
+    "Abu Dhabi Grand Prix": "Yas Marina Circuit",
+    "Miami Grand Prix": "Miami International Autodrome",
+    "Emilia Romagna Grand Prix": "Imola",
+    "Chinese Grand Prix": "Shanghai International Circuit",
+    "Barcelona Grand Prix": "Circuit de Barcelona-Catalunya",  # same as Spanish GP
+}
+
+# Add circuit features to each row
+def get_circuit_features(race_name: str, feature: str) -> float:
+    circuit = race_to_circuit.get(race_name)
+    if circuit is None:
+        return np.nan
+    row = circuits_df[circuits_df["Circuit"] == circuit]
+    if row.empty:
+        return np.nan
+    return row[feature].values[0]
+
+df["CircuitLength_km"] = df["Race"].map(lambda r: get_circuit_features(r, "Length_km"))
+df["CircuitCorners"] = df["Race"].map(lambda r: get_circuit_features(r, "Corners"))
+df["CircuitAvgSpeed"] = df["Race"].map(lambda r: get_circuit_features(r, "AvgSpeed_kmh"))
+df["CircuitType"] = df["Race"].map(lambda r: get_circuit_features(r, "Type"))
+
+# Encode circuit type
+type_map = {"Permanent": 0, "Street": 1, "Street/Permanent": 2}
+df["CircuitType_enc"] = df["CircuitType"].map(type_map).fillna(0).astype(int)
+
 # --- Weather data - load per race ---
 print("Loading weather data (this will take ~1-2 min)...")
-weather_dfs = []
+weather_dfs: list[pd.DataFrame] = []
 
-all_races = df["Race"].unique()
+all_races: pd.Index = df["Race"].unique()
 for i, race in enumerate(all_races):
     try:
         short_name = RACE_MAP.get(race, race.split()[0])
@@ -115,7 +174,7 @@ df["TyreLife_sq"] = df["TyreLife"] ** 2
 df["LapInRace_sq"] = df["LapInRace"] ** 2
 
 # Driver form (rolling avg of last 5 laps)
-df["DriverForm"] = df.groupby("Driver")["LapTime"].transform(
+df["DriverForm"] = df.groupby(["Race", "Driver"])["LapTime"].transform(
     lambda x: x.rolling(5, min_periods=1).mean()
 )
 df["DriverForm"] = df["DriverForm"].fillna(df["LapTime"])
@@ -127,7 +186,8 @@ keep_cols = [
     "FuelWeightEffect", "DriverForm", "Position_normalized",
     "S1_speed", "S2_speed", "S3_speed", "AvgSpeed",
     "IsPersonalBest_int", "FreshTire_int", "IsStartLap",
-    "AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed"
+    "AirTemp", "TrackTemp", "Humidity", "Rainfall", "WindSpeed",
+    "CircuitLength_km", "CircuitCorners", "CircuitAvgSpeed", "CircuitType_enc"
 ]
 keep = [c for c in keep_cols if c in df.columns]
 df = df[keep]
