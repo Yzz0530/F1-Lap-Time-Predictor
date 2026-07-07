@@ -1,8 +1,11 @@
+import os
 import pandas as pd
 import numpy as np
 import joblib
 import warnings
 warnings.filterwarnings("ignore")
+
+_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class F1StrategyOptimizer:
     COMPOUND_SPEED = {"SOFT": -0.35, "MEDIUM": 0.0, "HARD": 0.20}
@@ -12,13 +15,13 @@ class F1StrategyOptimizer:
     PIT_LOSS = 22.0
 
     def __init__(self):
-        base = "../models"
-        self.le_driver = joblib.load(f"{base}/le_driver_master.pkl")
-        self.le_compound = joblib.load(f"{base}/le_compound_master.pkl")
-        self.le_family = joblib.load(f"{base}/le_family_master.pkl")
-        self.xgb_model = joblib.load(f"{base}/xgb_master.pkl")
+        models_dir = os.path.join(_BASE, "models")
+        self.le_driver = joblib.load(os.path.join(models_dir, "le_driver_master.pkl"))
+        self.le_compound = joblib.load(os.path.join(models_dir, "le_compound_master.pkl"))
+        self.le_family = joblib.load(os.path.join(models_dir, "le_family_master.pkl"))
+        self.xgb_model = joblib.load(os.path.join(models_dir, "xgb_master.pkl"))
 
-        df = pd.read_csv(f"{base}/../data/all_races_master.csv")
+        df = pd.read_csv(os.path.join(_BASE, "data", "all_races_master.csv"))
         df["RaceBaseline"] = df.groupby("Race")["LapTime"].transform("mean")
         self.race_baselines = df.groupby("Race")["RaceBaseline"].first().to_dict()
 
