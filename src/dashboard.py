@@ -15,8 +15,7 @@ def load_optimizer():
 
 opt = load_optimizer()
 
-df = pd.read_csv("../data/all_races_clean.csv")
-tracks = sorted(df["Race"].unique())
+tracks = sorted(opt.race_baselines.keys())
 drivers = sorted(opt.driver_offsets.keys())
 
 tab1, tab2, tab3 = st.tabs(["Strategy Optimizer", "Driver Comparison", "Stint Simulator"])
