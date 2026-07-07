@@ -6,12 +6,21 @@ import matplotlib.patches as mpatches
 from strategy_optimizer import F1StrategyOptimizer
 import time
 
-st.set_page_config(page_title="F1 Strategy Optimizer", layout="wide")
-st.title("F1 Race Strategy Optimizer")
-
 @st.cache_resource
 def load_optimizer():
     return F1StrategyOptimizer()
+
+@st.cache_data(ttl=600)
+def run_optimization(track, laps, driver, mc_runs, sc_prob):
+    return load_optimizer().optimize(track, laps, driver, mc_runs=mc_runs, sc_prob=sc_prob)
+
+@st.cache_data(ttl=600)
+def run_detailed(track, laps, driver, strategy_tuple):
+    strat = list(strategy_tuple)
+    return load_optimizer().get_detailed_run(track, laps, driver, strat)
+
+st.set_page_config(page_title="F1 Strategy Optimizer", layout="wide")
+st.title("F1 Race Strategy Optimizer")
 
 opt = load_optimizer()
 
@@ -37,7 +46,7 @@ with tab1:
     if st.button("Optimize Strategy", type="primary"):
         with st.spinner(f"Running {mc_runs} simulations per strategy..."):
             t0 = time.time()
-            results = opt.optimize(track, laps, driver, mc_runs=mc_runs, sc_prob=sc_prob)
+            results = run_optimization(track, laps, driver, mc_runs, sc_prob)
             elapsed = time.time() - t0
 
         st.success(f"Evaluated in {elapsed:.1f}s — top {len(results)} strategies")
@@ -58,7 +67,6 @@ with tab1:
                     unsafe_allow_html=True,
                 )
 
-        # Bar chart
         st.subheader("Race Time Comparison")
         labels = [" -> ".join([f"{c[:3]}-{l}" for c, l in r["strategy"]]) for r in results[:8]]
         means = [r["mean_time"] / 60 for r in results[:8]]
@@ -73,10 +81,10 @@ with tab1:
         ax.invert_yaxis()
         st.pyplot(fig)
 
-        # Degradation curves
         st.subheader("Stint Degradation Curves")
         best_strat = results[0]["strategy"]
-        run = opt.get_detailed_run(track, laps, driver, best_strat)
+        st_tuple = tuple((c, l) for c, l in best_strat)
+        run = run_detailed(track, laps, driver, st_tuple)
         if run:
             fig2, ax2 = plt.subplots(figsize=(12, 4))
             colors_compound = {"SOFT": "#e41a1c", "MEDIUM": "#fdb462", "HARD": "#386cb0"}
@@ -126,8 +134,8 @@ with tab2:
 
     if st.button("Compare", type="primary", key="compare_btn"):
         with st.spinner("Running simulations..."):
-            r1 = opt.optimize(track_c, laps_c, d1, mc_runs=mc_c, sc_prob=0.2)
-            r2 = opt.optimize(track_c, laps_c, d2, mc_runs=mc_c, sc_prob=0.2)
+            r1 = run_optimization(track_c, laps_c, d1, mc_c, 0.2)
+            r2 = run_optimization(track_c, laps_c, d2, mc_c, 0.2)
 
         best1, best2 = r1[0], r2[0]
         diff = best1["mean_time"] - best2["mean_time"]
@@ -144,9 +152,10 @@ with tab2:
 
         st.subheader(f"{winner} wins by {abs(diff):.1f}s")
 
-        # Side by side degradation
-        run1 = opt.get_detailed_run(track_c, laps_c, d1, best1["strategy"])
-        run2 = opt.get_detailed_run(track_c, laps_c, d2, best2["strategy"])
+        t1 = tuple((c, l) for c, l in best1["strategy"])
+        t2 = tuple((c, l) for c, l in best2["strategy"])
+        run1 = run_detailed(track_c, laps_c, d1, t1)
+        run2 = run_detailed(track_c, laps_c, d2, t2)
 
         fig3, ax3 = plt.subplots(figsize=(12, 4))
         colors_compound = {"SOFT": "#e41a1c", "MEDIUM": "#fdb462", "HARD": "#386cb0"}
@@ -178,9 +187,10 @@ with tab3:
     with col4:
         track_s = st.selectbox("Track", tracks, index=tracks.index("British Grand Prix"), key="track_s")
 
-    run_detailed = opt.get_detailed_run(track_s, st_laps, sd, [(sc, st_laps)])
-    if run_detailed:
-        sd_data = run_detailed["stint_details"][0]
+    strat_tuple = ((sc, st_laps),)
+    stint_run = run_detailed(track_s, st_laps, sd, strat_tuple)
+    if stint_run:
+        sd_data = stint_run["stint_details"][0]
         laps_arr = list(range(1, st_laps + 1))
         times = sd_data["lap_times"]
 
@@ -205,7 +215,7 @@ with tab3:
         st.subheader("Lap-by-Lap Breakdown")
         tbl = pd.DataFrame({"Lap": laps_arr, "Lap Time": [f"{t:.3f}s" for t in times],
                             "Delta from Lap 1": [f"{(t - times[0]):+.3f}s" for t in times]})
-        st.dataframe(tbl, hide_index=True, use_container_width=True)
+        st.dataframe(tbl, hide_index=True, width="stretch")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### About")

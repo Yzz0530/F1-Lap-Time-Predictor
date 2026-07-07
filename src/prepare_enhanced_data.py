@@ -5,7 +5,7 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
-fastf1.Cache.enable_cache("C:/F1_CACHE")
+fastf1.Cache.enable_cache("../cache")
 
 RAW_PATH = "../data/all_races_2026.csv"
 OUT_PATH = "../data/all_races_master.csv"
