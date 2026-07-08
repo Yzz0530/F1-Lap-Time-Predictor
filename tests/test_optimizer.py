@@ -208,7 +208,7 @@ class TestMLIntegration(unittest.TestCase):
 
     def test_build_feature_matrix_shape(self) -> None:
         M = self.opt._build_feature_matrix("VER", "British Grand Prix", [("SOFT", 18), ("HARD", 34)])
-        self.assertEqual(M.shape, (52, 31))
+        self.assertEqual(M.shape, (52, len(self.opt.feature_list)))
 
     def test_build_feature_matrix_constant_features(self) -> None:
         M = self.opt._build_feature_matrix("VER", "British Grand Prix", [("SOFT", 18), ("HARD", 34)])

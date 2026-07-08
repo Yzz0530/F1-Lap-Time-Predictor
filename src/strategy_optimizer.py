@@ -251,7 +251,7 @@ class F1StrategyOptimizer:
                     sc_next_lap = None
                 noise = rng.normal(0, 0.08)
                 ml_lt = float(ml_preds[flat_idx])
-                phys_delta = self._physics_delta(driver, compound, lis, lap_number, False)
+                phys_delta = self._physics_delta(driver, compound, lis, lap_number, sc_active)
                 lt = ml_lt + (1.0 - self.ML_WEIGHT) * phys_delta + noise
                 times.append(lt)
                 total_time += lt

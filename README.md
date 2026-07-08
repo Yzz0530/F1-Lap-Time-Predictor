@@ -1,16 +1,15 @@
 # F1 Lap Time Predictor
 
-Predicts F1 lap times and optimizes race strategy using machine learning.
+Predicts F1 lap times and optimizes race strategy using XGBoost + Monte Carlo simulation.
 
 ## Pipeline
 
 ```
-download_data.py    → Downloads F1 session data via fastf1
-clean_data.py       → Cleans and engineers features
-predict_lap_time.py → Trains XGBoost model (baseline, ~0.58s MAE)
-train_enhanced.py   → Optuna-tuned XGBoost + ensemble (~0.52s MAE)
-f1_simulator.py     → Simulates a single stint with tire degradation
-strategy_optimizer.py → Finds optimal pit strategy for a full race
+download_all_races.py   → Downloads F1 session data via fastf1
+prepare_enhanced_data.py → Cleans and engineers features (circuit, weather, sector speeds)
+train.py                → Optuna-tuned XGBoost (absolute lap time, ~1.01s MAE)
+strategy_optimizer.py   → Monte Carlo strategy simulation (physics + ML blend)
+dashboard.py            → Streamlit UI for strategy optimization & driver comparison
 ```
 
 ## Setup
@@ -22,15 +21,15 @@ pip install -r requirements.txt
 ## Usage
 
 ```powershell
-cd src
-python download_all_races.py   # downloads 2025 race data
-python clean_data.py           # cleans + feature engineering
-python train_enhanced.py       # trains tuned ensemble model
-python strategy_optimizer.py   # finds optimal race strategy
+python src/download_all_races.py
+python src/prepare_enhanced_data.py
+python src/train.py
+streamlit run src/dashboard.py
 ```
 
 ## Results
 
-- **Baseline XGBoost**: ~0.585s MAE on unseen tracks
-- **Tuned XGBoost + features**: ~0.524s MAE (10% improvement)
-- **Strategy optimizer**: evaluates 1-stop and 2-stop strategies to minimize total race time
+- **XGBoost (absolute lap time)**: ~1.01s MAE on unseen tracks (31 features)
+- **70/30 ML-physics blend**: lap-time prediction for both known and new circuits
+- **Strategy optimizer**: evaluates 1-stop and 2-stop strategies with safety car and DNF simulation
+- **Data**: 25 races (2025 + 2026), 24 drivers, 25,697 laps

@@ -1,11 +1,12 @@
 """
 F1 Strategy Optimizer Dashboard — Streamlit UI.
 
-Three-tab interface for strategy optimization, driver comparison,
-and stint simulation powered by XGBoost lap time predictions.
+Four-tab interface for strategy optimization, driver comparison,
+stint simulation, and track analysis powered by XGBoost lap time predictions.
 """
 from __future__ import annotations
 
+import os
 import time
 from typing import Any
 
@@ -19,17 +20,17 @@ from strategy_optimizer import F1StrategyOptimizer
 F1_RED = "#e10600"
 COMPOUND_COLORS = {"SOFT": "#e10600", "MEDIUM": "#ffb800", "HARD": "#a0a0a0"}
 TEAMS: dict[str, tuple[str, str]] = {
-    "VER": ("#1e41ff", "Red Bull"),
-    "LAW": ("#1e41ff", "Red Bull"),
+    "VER": ("#1e41ff", "Red Bull"), "HAD": ("#1e41ff", "Red Bull"),
     "LEC": ("#dc0000", "Ferrari"), "HAM": ("#dc0000", "Ferrari"),
     "RUS": ("#00d2be", "Mercedes"), "ANT": ("#00d2be", "Mercedes"),
     "NOR": ("#ff8000", "McLaren"), "PIA": ("#ff8000", "McLaren"),
     "ALO": ("#00665e", "Aston Martin"), "STR": ("#00665e", "Aston Martin"),
-    "GAS": ("#fd7cac", "Alpine"), "DOO": ("#fd7cac", "Alpine"),
-    "BEA": ("#b6b6b6", "Haas"), "OCO": ("#b6b6b6", "Haas"),
-    "HAD": ("#4b2db8", "RB"), "TSU": ("#4b2db8", "RB"),
+    "GAS": ("#fd7cac", "Alpine"), "COL": ("#fd7cac", "Alpine"),
+    "OCO": ("#b6b6b6", "Haas"), "BEA": ("#b6b6b6", "Haas"),
+    "LAW": ("#4b2db8", "RB"), "LIN": ("#4b2db8", "RB"),
     "ALB": ("#005aff", "Williams"), "SAI": ("#005aff", "Williams"),
-    "BOR": ("#00e701", "Sauber"), "HUL": ("#00e701", "Sauber"),
+    "HUL": ("#00e701", "Audi"), "BOR": ("#00e701", "Audi"),
+    "PER": ("#898989", "Cadillac"), "BOT": ("#898989", "Cadillac"),
 }
 DRIVERS_LIST = sorted(TEAMS.keys())
 
@@ -146,7 +147,9 @@ st.markdown(
 
 # ── Tabs ──────────────────────────────────────────────────────────────
 
-tab1, tab2, tab3 = st.tabs(["STRATEGY", "COMPARE DRIVERS", "STINT SIMULATION"])
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["🏁 STRATEGY", "⚔️ DRIVER BATTLE", "🔄 STINT SIM", "📊 TRACK ANALYSIS"]
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -170,10 +173,6 @@ with tab1:
         dnf_prob = st.slider("DNF Probability", 0.0, 0.3, 0.05, 0.01, format="%.2f")
 
     if st.button("RUN OPTIMIZATION", type="primary", use_container_width=True):
-        if driver not in TEAMS:
-            st.warning(f"Driver {driver} not found in team data.")
-            st.stop()
-
         with st.spinner(f"Running {mc_runs} simulations across all strategies..."):
             t0 = time.time()
             results = run_optimization(track, laps, driver, mc_runs, sc_prob, dnf_prob)
@@ -427,3 +426,126 @@ with tab3:
         st.dataframe(tbl, hide_index=True, width="stretch")
     else:
         st.info("Run a stint simulation to see lap-by-lap data.")
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# TAB 4 — Track Analysis
+# ═════════════════════════════════════════════════════════════════════════
+
+with tab4:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        ta_track = st.selectbox("Track", tracks, index=tracks.index("British Grand Prix"), key="ta_track")
+    with col2:
+        ta_year = st.selectbox("Year", ["All", "2026", "2025"], key="ta_year")
+    with col3:
+        ta_compound = st.selectbox("Compound", ["All", "SOFT", "MEDIUM", "HARD"], key="ta_compound")
+
+    # ── Load data ──
+    _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    df_raw = pd.read_csv(os.path.join(_BASE, "data", "all_races_master.csv"))
+    df_track = df_raw[df_raw["Race"] == ta_track].copy()
+    if ta_year != "All":
+        df_track = df_track[df_track["Year"] == int(ta_year)]
+    if ta_compound != "All":
+        df_track = df_track[df_track["Compound"] == ta_compound]
+
+    if df_track.empty:
+        st.info(f"No lap data available for the selected filters.")
+        st.stop()
+
+    # ── Data Overview ──
+    st.markdown("<div class='section-label'>Data Overview</div>", unsafe_allow_html=True)
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Laps", len(df_track))
+    c2.metric("Drivers", df_track["Driver"].nunique())
+    c3.metric("Avg Lap", f"{df_track['LapTime'].mean():.3f}s")
+    c4.metric("Median Lap", f"{df_track['LapTime'].median():.3f}s")
+    yrs = sorted(df_track["Year"].unique())
+    c5.metric("Year(s)", "+".join(str(int(y)) for y in yrs) if len(yrs) <= 2 else f"{int(min(yrs))}-{int(max(yrs))}")
+
+    # ── Lap Time Distribution ──
+    st.markdown("<div class='section-label'>Lap Time Distribution by Compound</div>", unsafe_allow_html=True)
+    fig, ax = plt.subplots(figsize=(10, 3.2))
+    fig.patch.set_facecolor("none")
+    ax.set_facecolor("#0f0f0f")
+    for cpd in ["SOFT", "MEDIUM", "HARD"]:
+        sub = df_raw[(df_raw["Race"] == ta_track) & (df_raw["Compound"] == cpd)]
+        if not sub.empty:
+            ax.hist(sub["LapTime"], bins=40, alpha=0.45,
+                    color=COMPOUND_COLORS.get(cpd, "#888"),
+                    label=cpd, density=True)
+    ax.set_xlabel("Lap Time (s)", color="#555", fontsize=8)
+    ax.set_ylabel("Density", color="#555", fontsize=8)
+    ax.tick_params(colors="#444")
+    for sp in ["top", "right", "left"]:
+        ax.spines[sp].set_visible(False)
+    ax.spines["bottom"].set_color("#222")
+    ax.legend(facecolor="#1a1a1a", labelcolor="#aaa", fontsize=7, framealpha=0.9, edgecolor="#333")
+    st.pyplot(fig, clear_figure=True)
+
+    # ── Tyre Degradation ──
+    st.markdown("<div class='section-label'>Tyre Degradation by Compound</div>", unsafe_allow_html=True)
+    fig2, ax2 = plt.subplots(figsize=(10, 3.2))
+    fig2.patch.set_facecolor("none")
+    ax2.set_facecolor("#0f0f0f")
+    df_trk = df_raw[df_raw["Race"] == ta_track]
+    for cpd in ["SOFT", "MEDIUM", "HARD"]:
+        sub = df_trk[df_trk["Compound"] == cpd]
+        if not sub.empty and sub["TyreLife"].nunique() > 2:
+            deg = sub.groupby("TyreLife")["LapTime"].mean().reset_index()
+            ax2.plot(deg["TyreLife"], deg["LapTime"],
+                     color=COMPOUND_COLORS.get(cpd, "#888"),
+                     linewidth=2, label=cpd, marker="o", markersize=3)
+    ax2.set_xlabel("Tyre Life (laps)", color="#555", fontsize=8)
+    ax2.set_ylabel("Avg Lap Time (s)", color="#555", fontsize=8)
+    ax2.tick_params(colors="#444")
+    for sp in ["top", "right", "left"]:
+        ax2.spines[sp].set_visible(False)
+    ax2.spines["bottom"].set_color("#222")
+    ax2.legend(facecolor="#1a1a1a", labelcolor="#aaa", fontsize=7, framealpha=0.9, edgecolor="#333")
+    st.pyplot(fig2, clear_figure=True)
+
+    # ── Driver Ranking ──
+    st.markdown(f"<div class='section-label'>Driver Ranking</div>", unsafe_allow_html=True)
+    driver_avg = df_trk.groupby("Driver")["LapTime"].mean().sort_values()
+    n = len(driver_avg)
+    fig3, ax3 = plt.subplots(figsize=(10, max(3.2, n * 0.32)))
+    fig3.patch.set_facecolor("none")
+    ax3.set_facecolor("#0f0f0f")
+    bar_colors = [TEAMS.get(d, ("#666", ""))[0] for d in driver_avg.index]
+    ax3.barh(range(n), driver_avg.values, color=bar_colors, height=0.7)
+    ax3.set_yticks(range(n))
+    ax3.set_yticklabels(driver_avg.index, color="#aaa", fontsize=8)
+    ax3.set_xlabel("Avg Lap Time (s)", color="#555", fontsize=8)
+    ax3.tick_params(colors="#444", labelsize=7)
+    for sp in ["top", "right", "bottom"]:
+        ax3.spines[sp].set_visible(False)
+    ax3.spines["left"].set_color("#222")
+    for i, v in enumerate(driver_avg.values):
+        ax3.text(v + 0.02, i, f"{v:.3f}s", color="#777", fontsize=6.5, va="center")
+    st.pyplot(fig3, clear_figure=True)
+
+    # ── Year Comparison ──
+    if df_trk["Year"].nunique() > 1:
+        st.markdown("<div class='section-label'>Year-over-Year Comparison</div>", unsafe_allow_html=True)
+        fig4, ax4 = plt.subplots(figsize=(10, 3.2))
+        fig4.patch.set_facecolor("none")
+        ax4.set_facecolor("#0f0f0f")
+        for yr in sorted(df_trk["Year"].unique()):
+            sub = df_trk[df_trk["Year"] == yr]
+            d_avg = sub.groupby("Driver")["LapTime"].mean().reindex(driver_avg.index)
+            ax4.plot(d_avg.values, range(len(d_avg)),
+                     marker="o", markersize=4, linewidth=1.5, label=str(int(yr)))
+        ax4.set_xlabel("Avg Lap Time (s)", color="#555", fontsize=8)
+        ax4.set_ylabel("Driver (ranked)", color="#555", fontsize=8)
+        ax4.tick_params(colors="#444")
+        ax4.set_yticks(range(len(driver_avg)))
+        ax4.set_yticklabels(driver_avg.index, color="#aaa", fontsize=7)
+        for sp in ["top", "right", "left"]:
+            ax4.spines[sp].set_visible(False)
+        ax4.spines["bottom"].set_color("#222")
+        ax4.legend(facecolor="#1a1a1a", labelcolor="#aaa", fontsize=7,
+                   framealpha=0.9, edgecolor="#333")
+        st.pyplot(fig4, clear_figure=True)
+

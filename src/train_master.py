@@ -1,7 +1,13 @@
 """
-Legacy training pipeline — kept for reference.
-Use train.py instead for production training.
+LEGACY — DO NOT USE.
+Trains on delta-target (not absolute) and DOES NOT save circuit artifacts.
+Running this will OVERWRITE the production model with an incompatible one.
+Use `python src/train.py` instead.
 """
+import sys
+print("ERROR: train_master.py is legacy and produces incompatible model artifacts.", file=sys.stderr)
+print("Use `python src/train.py` instead.", file=sys.stderr)
+sys.exit(1)
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -38,6 +44,8 @@ df["IsWet"] = (df["Compound"] == "INTERMEDIATE").astype(int)
 stint_total = df.groupby(["Race", "Driver", "Stint"])["LapInRace"].transform("max")
 progress = df["LapInRace"] / stint_total.clip(lower=1)
 df["StintPhase"] = pd.cut(progress, bins=[0, 0.33, 0.66, 1], labels=[0, 1, 2]).fillna(0).astype(int)
+print("WARNING: This legacy pipeline uses DELTA target + wrong StintPhase (global ratio).")
+print("Use `python src/train.py` for the correct absolute-target + circuit features model.")
 
 df["RaceBaseline"] = df.groupby("Race")["LapTime"].transform("mean")
 df["Target"] = df["LapTime"] - df["RaceBaseline"]

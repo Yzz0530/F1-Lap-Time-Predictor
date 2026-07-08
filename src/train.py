@@ -45,9 +45,10 @@ compound_order: dict[str, int] = {"SOFT": 1, "MEDIUM": 2, "HARD": 3, "INTERMEDIA
 df["CompoundOrdinal"] = df["Compound"].fillna("MEDIUM").map(compound_order).fillna(2)
 df["IsWet"] = (df["Compound"] == "INTERMEDIATE").astype(int)
 
-# Stint phase
-stint_total = df.groupby(["Race", "Driver", "Stint"])["LapInRace"].transform("max")
-progress = df["LapInRace"] / stint_total.clip(lower=1)
+# Stint phase (lap within stint, not global lap)
+df["LapInStint"] = df.groupby(["Race", "Driver", "Stint"]).cumcount() + 1
+stint_len = df.groupby(["Race", "Driver", "Stint"])["LapInStint"].transform("max")
+progress = df["LapInStint"] / stint_len.clip(lower=1)
 df["StintPhase"] = pd.cut(progress, bins=[0, 0.33, 0.66, 1], labels=[0, 1, 2]).fillna(0).astype(int)
 
 # Target: absolute lap time (not delta from race baseline)
@@ -155,7 +156,7 @@ race_to_circuit = {
     "Saudi Arabian Grand Prix": "Jeddah Corniche Circuit",
     "Australian Grand Prix": "Albert Park Circuit",
     "Azerbaijan Grand Prix": "Baku City Circuit",
-    "Spanish Grand Prix": "Circuit de Barcelona-Catalunya",
+    "Barcelona Grand Prix": "Circuit de Barcelona-Catalunya",
     "Monaco Grand Prix": "Circuit de Monaco",
     "Canadian Grand Prix": "Circuit Gilles Villeneuve",
     "British Grand Prix": "Silverstone Circuit",
@@ -175,7 +176,6 @@ race_to_circuit = {
     "Miami Grand Prix": "Miami International Autodrome",
     "Emilia Romagna Grand Prix": "Imola",
     "Chinese Grand Prix": "Shanghai International Circuit",
-    "Barcelona Grand Prix": "Circuit de Barcelona-Catalunya",
 }
 circuit_info = {}
 for race, circuit in race_to_circuit.items():
