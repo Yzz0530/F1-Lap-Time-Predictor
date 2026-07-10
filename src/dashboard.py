@@ -136,6 +136,29 @@ except Exception as e:
 
 
 # ══════════════════════════════════════════════════════════════════
+# ACTIVE CIRCUIT ROTATION (sidebar — auto-cycles every 10s)
+# ══════════════════════════════════════════════════════════════════
+
+@st.fragment(run_every=10)
+def _render_active_circuit():
+    idx = int(time.time() / 10) % len(tracks)
+    name = tracks[idx]
+    info = opt.circuit_info.get(name, {})
+    length = info.get("Length_km", 0)
+    corners = info.get("Corners", 0)
+    speed = info.get("AvgSpeed", 0)
+    st.markdown(
+        f"<div style='text-align:center;padding:0.6rem 0.5rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:6px;'>"
+        f"<div style='color:var(--text-muted);font-size:0.55rem;letter-spacing:0.8px;"
+        f"text-transform:uppercase;margin-bottom:0.4rem;'>Active Circuit</div>"
+        f"<div style='color:var(--text-primary);font-weight:600;font-size:0.85rem;'>{name}</div>"
+        f"<div style='color:var(--text-dim);font-size:0.6rem;margin-top:0.25rem;'>"
+        f"{length} km · {corners} corners · {speed} km/h</div></div>",
+        unsafe_allow_html=True,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════
 # SIDEBAR
 # ══════════════════════════════════════════════════════════════════
 
@@ -153,17 +176,27 @@ with st.sidebar:
         "<span class='badge' style='margin-bottom:0.8rem;display:inline-block;'>2026 SEASON · 24 RACES</span>",
         unsafe_allow_html=True,
     )
+    st.markdown(
+        "<div class='tech-dot-group'>"
+        "<div class='tech-dot-item'><div class='tech-dot'></div><span class='tech-dot-label'>FastF1</span></div>"
+        "<div class='tech-dot-item'><div class='tech-dot'></div><span class='tech-dot-label'>XGBoost</span></div>"
+        "<div class='tech-dot-item'><div class='tech-dot'></div><span class='tech-dot-label'>Streamlit</span></div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown(
         f"<div style='display:flex;gap:1.2rem;'>"
-        f"<div style='flex:1;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:6px;padding:0.5rem;text-align:center;'>"
-        f"<div style='font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--text-primary);'>{len(DRIVERS_LIST)}</div>"
+        f"<div class='stat-box'><div style='font-family:var(--font-mono);font-size:1.2rem;font-weight:700;color:var(--text-primary);'>{len(DRIVERS_LIST)}</div>"
         f"<div style='color:var(--text-dim);font-size:0.55rem;letter-spacing:0.8px;text-transform:uppercase;margin-top:2px;'>Drivers</div></div>"
-        f"<div style='flex:1;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:6px;padding:0.5rem;text-align:center;'>"
-        f"<div style='font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--f1-red);'>{len(tracks)}</div>"
+        f"<div class='stat-box'><div style='font-family:var(--font-mono);font-size:1.2rem;font-weight:700;color:var(--f1-red);'>{len(tracks)}</div>"
         f"<div style='color:var(--text-dim);font-size:0.55rem;letter-spacing:0.8px;text-transform:uppercase;margin-top:2px;'>Tracks</div></div></div>",
         unsafe_allow_html=True,
     )
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    _render_active_circuit()
+
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown(
         "<div style='color:var(--text-muted);font-size:0.7rem;line-height:1.7;'>"
@@ -198,15 +231,15 @@ st.markdown(
     "Predict · Simulate · Optimize</span></div>",
     unsafe_allow_html=True,
 )
-st.markdown("<div class='checkered-divider'></div>", unsafe_allow_html=True)
+st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 
 # ══════════════════════════════════════════════════════════════════
 # TABS
 # ══════════════════════════════════════════════════════════════════
 
-TAB_NAMES = ["STRATEGY", "DRIVER BATTLE", "STINT TELEMETRY", "TRACK ANALYSIS",
-             "SC SIMULATOR", "UNDERCUT", "CAR TELEMETRY", "AI ASSISTANT"]
+TAB_NAMES = ["01  STRATEGY", "02  DRIVER BATTLE", "03  STINT TELEMETRY", "04  TRACK ANALYSIS",
+             "05  SC SIMULATOR", "06  UNDERCUT", "07  CAR TELEMETRY", "08  AI ASSISTANT"]
 active_tab = st.radio("tab_nav", TAB_NAMES, horizontal=True, label_visibility="collapsed")
 
 
@@ -214,11 +247,19 @@ active_tab = st.radio("tab_nav", TAB_NAMES, horizontal=True, label_visibility="c
 # TAB 1 — STRATEGY (existing refactored)
 # ══════════════════════════════════════════════════════════════════
 
-if active_tab == "STRATEGY":
+if active_tab == "01  STRATEGY":
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         sd1 = st.selectbox("Driver", DRIVERS_LIST, index=DRIVERS_LIST.index("VER"),
-                           format_func=lambda d: f"{d}  ·  {_team_name(d)}")
+                           format_func=lambda d: f"{d}  ·  {_team_name(d)}",
+                           key="s_driver")
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:6px;margin-top:2px;padding-left:2px;'>"
+            f"<span class='driver-dot' style='color:{_team_color(sd1)};'></span>"
+            f"<span style='color:var(--text-primary);font-weight:600;font-size:0.8rem;'>{sd1}</span>"
+            f"<span style='color:var(--text-dim);font-size:0.65rem;'>{_team_name(sd1)}</span></div>",
+            unsafe_allow_html=True,
+        )
     with c2:
         st1 = st.selectbox("Track", tracks, index=tracks.index("British Grand Prix"), key="s_track")
     with c3:
@@ -321,14 +362,28 @@ if active_tab == "STRATEGY":
 # TAB 2 — DRIVER BATTLE (existing, preserved)
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "DRIVER BATTLE":
+elif active_tab == "02  DRIVER BATTLE":
     col_d1, col_d2 = st.columns(2)
     with col_d1:
         d1 = st.selectbox("Driver 1", DRIVERS_LIST, index=DRIVERS_LIST.index("VER"), key="d1",
                           format_func=lambda d: f"{d}  ·  {_team_name(d)}")
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:6px;margin-top:2px;padding-left:2px;'>"
+            f"<span class='driver-dot' style='color:{_team_color(d1)};'></span>"
+            f"<span style='color:var(--text-primary);font-weight:600;font-size:0.8rem;'>{d1}</span>"
+            f"<span style='color:var(--text-dim);font-size:0.65rem;'>{_team_name(d1)}</span></div>",
+            unsafe_allow_html=True,
+        )
     with col_d2:
         d2 = st.selectbox("Driver 2", DRIVERS_LIST, index=DRIVERS_LIST.index("HAM"), key="d2",
                           format_func=lambda d: f"{d}  ·  {_team_name(d)}")
+        st.markdown(
+            f"<div style='display:flex;align-items:center;gap:6px;margin-top:2px;padding-left:2px;'>"
+            f"<span class='driver-dot' style='color:{_team_color(d2)};'></span>"
+            f"<span style='color:var(--text-primary);font-weight:600;font-size:0.8rem;'>{d2}</span>"
+            f"<span style='color:var(--text-dim);font-size:0.65rem;'>{_team_name(d2)}</span></div>",
+            unsafe_allow_html=True,
+        )
     if d1 == d2:
         st.info("Select two different drivers.")
     else:
@@ -366,7 +421,7 @@ elif active_tab == "DRIVER BATTLE":
                         f"<span style='color:var(--text-dim);font-size:0.75rem;margin-left:0.5rem;font-family:var(--font-mono);'>({mins}:{secs:02d}) ±{res['std_time']:.2f}s</span></div></div>",
                         unsafe_allow_html=True,
                     )
-                st.markdown(f"<div class='checkered-divider'></div>", unsafe_allow_html=True)
+                st.markdown(f"<div class='divider'></div>", unsafe_allow_html=True)
                 st.markdown(
                     f"<div class='winner-badge'>🏆 {_driver_tag(winner)} beats {_driver_tag(loser)} "
                     f"by <b style='color:var(--f1-red);font-family:var(--font-mono);'>{abs(diff):.1f}s</b></div>",
@@ -393,7 +448,7 @@ elif active_tab == "DRIVER BATTLE":
 # TAB 3 — STINT TELEMETRY (enhanced stint sim)
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "STINT TELEMETRY":
+elif active_tab == "03  STINT TELEMETRY":
     ca, cb, cc, cd = st.columns(4)
     with ca:
         sd3 = st.selectbox("Driver", DRIVERS_LIST, index=DRIVERS_LIST.index("VER"), key="s3",
@@ -449,7 +504,7 @@ elif active_tab == "STINT TELEMETRY":
 # TAB 4 — TRACK ANALYSIS (existing, preserved with weather viz)
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "TRACK ANALYSIS":
+elif active_tab == "04  TRACK ANALYSIS":
     ca, cb, cc = st.columns(3)
     with ca:
         ta_track = st.selectbox("Track", tracks, index=tracks.index("British Grand Prix"), key="ta_track")
@@ -571,7 +626,7 @@ elif active_tab == "TRACK ANALYSIS":
 # TAB 5 — SC SIMULATOR
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "SC SIMULATOR":
+elif active_tab == "05  SC SIMULATOR":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>🚨</span>"
@@ -651,7 +706,7 @@ elif active_tab == "SC SIMULATOR":
 # TAB 6 — UNDERCUT / OVERCUT ANALYZER
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "UNDERCUT":
+elif active_tab == "06  UNDERCUT":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>✂️</span>"
@@ -709,7 +764,7 @@ elif active_tab == "UNDERCUT":
             st.dataframe(windows_df, hide_index=True)
 
     # Strategy comparison
-    st.markdown("<div class='checkered-divider'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='section-label'>Strategy vs Strategy Battle</div>", unsafe_allow_html=True)
     ca, cb = st.columns(2)
     with ca:
@@ -756,7 +811,7 @@ elif active_tab == "UNDERCUT":
 # TAB 7 — CAR TELEMETRY
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "CAR TELEMETRY":
+elif active_tab == "07  CAR TELEMETRY":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>📊</span>"
@@ -825,7 +880,7 @@ elif active_tab == "CAR TELEMETRY":
 # TAB 8 — AI STRATEGY ASSISTANT
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "AI ASSISTANT":
+elif active_tab == "08  AI ASSISTANT":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>🤖</span>"

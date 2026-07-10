@@ -121,18 +121,65 @@ h3::before {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   CHEQUERED FLAG DIVIDER
+   DIVIDER — solid F1-red accent line
    ═══════════════════════════════════════════════════════════════════════ */
 
-.checkered-divider {
-    height: 4px; margin: 1.2rem 0;
-    background: repeating-linear-gradient(
-        90deg,
-        #fff 0px, #fff 6px,
-        #111 6px, #111 12px
-    );
-    opacity: 0.08;
-    border-radius: 2px;
+.divider {
+    height: 1px; margin: 0.8rem 0;
+    background: linear-gradient(90deg, transparent, rgba(225,6,0,0.25), transparent);
+    border: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TECH POWER DOTS — 3 green glowing dots in sidebar
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.tech-dot-group {
+    display: flex;
+    justify-content: center;
+    gap: 1.4rem;
+    margin: 0.6rem 0 0.4rem;
+}
+.tech-dot-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+}
+.tech-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #00e701;
+    box-shadow: 0 0 10px rgba(0,231,1,0.7), 0 0 20px rgba(0,231,1,0.3);
+    animation: tech-pulse 2s ease-in-out infinite;
+}
+.tech-dot-item:nth-child(2) .tech-dot { animation-delay: 0.4s; }
+.tech-dot-item:nth-child(3) .tech-dot { animation-delay: 0.8s; }
+.tech-dot-label {
+    color: var(--text-muted);
+    font-size: 0.52rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 600;
+}
+
+@keyframes tech-pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(0,231,1,0.5), 0 0 20px rgba(0,231,1,0.2); transform: scale(1); }
+    50% { box-shadow: 0 0 16px rgba(0,231,1,0.9), 0 0 30px rgba(0,231,1,0.4); transform: scale(1.15); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   STAT BOX — sidebar number cards
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.stat-box {
+    flex: 1;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-muted);
+    border-radius: 6px;
+    padding: 0.6rem 0.5rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -143,16 +190,22 @@ h3::before {
     color: var(--text-dim) !important; font-size: 0.62rem !important;
     font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
     margin-bottom: 0.2rem !important;
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
 }
 
 .stSelectbox div[data-baseweb="select"] {
-    background: var(--bg-card); border: 1px solid var(--border-subtle);
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
+    border: 1px solid var(--border-subtle);
     border-radius: 6px; transition: all 0.2s;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    min-height: 2.3rem;
 }
 
 .stSelectbox div[data-baseweb="select"]:hover {
     border-color: var(--border-muted);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(225,6,0,0.08);
 }
 
 .stSelectbox div[data-baseweb="select"]:focus-within {
@@ -160,17 +213,66 @@ h3::before {
     box-shadow: 0 0 0 2px var(--f1-red-dim), inset 0 1px 3px rgba(0,0,0,0.3);
 }
 
+/* Dropdown menu styling */
+.stSelectbox div[data-baseweb="popover"] {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-muted) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+
+.stSelectbox div[data-baseweb="popover"] li {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.78rem !important;
+    padding: 0.4rem 0.8rem !important;
+    transition: all 0.15s;
+}
+
+.stSelectbox div[data-baseweb="popover"] li:hover {
+    background: rgba(225,6,0,0.08) !important;
+    color: var(--text-primary) !important;
+}
+
+.stSelectbox div[data-baseweb="popover"] li[aria-selected="true"] {
+    background: rgba(225,6,0,0.12) !important;
+    color: var(--text-primary) !important;
+    border-left: 2px solid var(--f1-red) !important;
+}
+
 .stNumberInput input {
-    background: var(--bg-card); border: 1px solid var(--border-subtle);
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
+    border: 1px solid var(--border-subtle);
     color: var(--text-primary); border-radius: 6px;
     transition: all 0.2s;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
     font-weight: 600;
+    min-height: 2.3rem;
+}
+
+.stNumberInput input:hover {
+    border-color: var(--border-muted);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(225,6,0,0.08);
 }
 
 .stNumberInput input:focus {
     border-color: var(--f1-red);
     box-shadow: 0 0 0 2px var(--f1-red-dim), inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.stNumberInput button {
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--text-secondary) !important;
+    border-radius: 4px !important;
+    transition: all 0.15s;
+    min-width: 1.8rem;
+}
+
+.stNumberInput button:hover {
+    background: var(--bg-hover) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-muted) !important;
 }
 
 .stSlider div[data-baseweb="slider"] div {
@@ -222,28 +324,68 @@ div.stButton button:disabled {
     opacity: 0.2; box-shadow: none; transform: none;
 }
 
-/* Force equal-width columns for buttons (AI quick questions, etc.) */
-section[data-testid="stMain"] div[data-testid="column"] {
-    flex: 1 1 0px !important;
-    min-width: 0 !important;
+/* ═══════════════════════════════════════════════════════════════════════
+   AI QUICK-QUESTION BUTTONS — responsive equal-width grid
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Convert the horizontal block to a 4-column CSS Grid */
+div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0) {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 0.5rem !important;
+}
+@media (max-width: 742px) {
+    div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0) {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 480px) {
+    div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0) {
+        grid-template-columns: 1fr !important;
+    }
 }
 
-/* Force all st.button elements inside columns to fill their container width */
-div[data-testid="column"] .stButton button {
+/* Override Streamlit's column width calc(25% - 1rem) inside the grid */
+div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0)
+[data-testid="stColumn"] {
     width: 100% !important;
-    box-sizing: border-box !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-    white-space: normal;
-    word-wrap: break-word;
-    min-height: 2.5rem;
+    min-width: 0 !important;
+    max-width: none !important;
 }
 
-/* ── AI quick-question buttons: equal width ── */
-/* In the AI tab, the 4 quick question buttons sit inside 4 equal columns.
-   This rule gives each a floor width so they stay same-size even on resize. */
-div[data-testid="column"] .stButton button {
-    min-width: 140px;
+/* Make every container inside the grid-column fill available width */
+div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0)
+[data-testid="stColumn"] > [data-testid="stVerticalBlock"],
+div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0)
+[data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"],
+div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0)
+[data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] > [data-testid="stButton"] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+}
+
+/* Style the actual buttons inside the grid */
+div[data-testid="stHorizontalBlock"]:has(.st-key-qq_0) button {
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+    padding: 0.75rem 0.4rem !important;
+    white-space: normal;
+    word-break: break-word;
+    min-height: 3.5rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    margin: 0 !important;
+}
+
+/* Equal-width columns in main area */
+section[data-testid="stMain"] div[data-testid="stColumn"],
+section[data-testid="stMain"] div[data-testid="column"] {
+    flex: 1 0 0px !important;
+    min-width: 0 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -269,9 +411,9 @@ label[data-testid="stRadioOption"] {
     justify-content: center;
     color: var(--text-muted);
     font-weight: 600;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     letter-spacing: 0.8px;
-    padding: 0.65rem 1.8rem;
+    padding: 0.6rem 0.9rem;
     border-bottom: 2px solid transparent;
     transition: all 0.25s;
     text-transform: uppercase;
@@ -459,12 +601,30 @@ div[data-testid="stRadio"] > label {
 .team-dot {
     display: inline-block; width: 10px; height: 10px;
     border-radius: 50%;
-    box-shadow: 0 0 8px currentColor;
+    background-color: currentColor;
     vertical-align: middle;
     transition: transform 0.2s;
 }
 
 .team-dot:hover { transform: scale(1.3); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DRIVER DOT — glowing circumference ring below selectboxes
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.driver-dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+    vertical-align: middle;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.driver-dot:hover {
+    transform: scale(1.25);
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    DRIVER HEADER
