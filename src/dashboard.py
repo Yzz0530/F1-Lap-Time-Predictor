@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import time
+import urllib.parse
 from typing import Any
 
 import matplotlib.patches as mpatches
@@ -135,27 +136,65 @@ except Exception as e:
     st.stop()
 
 
-# ══════════════════════════════════════════════════════════════════
 # ACTIVE CIRCUIT ROTATION (sidebar — auto-cycles every 10s)
 # ══════════════════════════════════════════════════════════════════
 
+_prev_circuit = None
+
 @st.fragment(run_every=10)
 def _render_active_circuit():
+    global _prev_circuit
     idx = int(time.time() / 10) % len(tracks)
     name = tracks[idx]
+    prev = _prev_circuit
+    _prev_circuit = name
+
     info = opt.circuit_info.get(name, {})
     length = info.get("Length_km", 0)
     corners = info.get("Corners", 0)
     speed = info.get("AvgSpeed", 0)
-    st.markdown(
-        f"<div style='text-align:center;padding:0.6rem 0.5rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:6px;'>"
-        f"<div style='color:var(--text-muted);font-size:0.55rem;letter-spacing:0.8px;"
-        f"text-transform:uppercase;margin-bottom:0.4rem;'>Active Circuit</div>"
-        f"<div style='color:var(--text-primary);font-weight:600;font-size:0.85rem;'>{name}</div>"
-        f"<div style='color:var(--text-dim);font-size:0.6rem;margin-top:0.25rem;'>"
-        f"{length} km · {corners} corners · {speed} km/h</div></div>",
-        unsafe_allow_html=True,
-    )
+
+    p_len = p_corners = p_speed = 0
+    if prev:
+        pi = opt.circuit_info.get(prev, {})
+        p_len, p_corners, p_speed = pi.get("Length_km", 0), pi.get("Corners", 0), pi.get("AvgSpeed", 0)
+
+    old_html = ""
+    if prev:
+        old_html = f'''<div class="old" style="position:absolute;inset:0;">
+            <div style="color:rgba(255,255,255,0.9);font-weight:600;font-size:0.85rem;">{prev}</div>
+            <div style="color:rgba(255,255,255,0.5);font-size:0.6rem;margin-top:0.75rem;">{p_len} km · {p_corners} corners · {p_speed} km/h</div>
+        </div>'''
+
+    new_cls = "new" if prev else ""
+
+    html = f"""<div style="
+        font-family:Inter,'Segoe UI',sans-serif;
+        text-align:left;
+    ">
+        <style>
+            @keyframes oldFade {{0%{{opacity:1;}}100%{{opacity:0;}}}}
+            @keyframes newFade {{0%{{opacity:0;}}100%{{opacity:1;}}}}
+            .old{{animation:oldFade 0.35s ease-out forwards;}}
+            .new{{animation:newFade 0.45s ease-out 0.35s both;}}
+            body{{margin:0;background:transparent;}}
+        </style>
+        <div style="
+            color:rgba(255,255,255,0.35);font-size:0.6rem;
+            letter-spacing:0.5px;text-transform:uppercase;
+            margin-bottom:0.55rem;
+        ">Active Circuit</div>
+        <div style="position:relative;min-height:3.2rem;">
+            {old_html}
+            <div class="{new_cls}">
+                <div style="color:rgba(255,255,255,0.9);font-weight:600;font-size:0.85rem;">{name}</div>
+                <div style="color:rgba(255,255,255,0.5);font-size:0.6rem;margin-top:0.75rem;">{length} km · {corners} corners · {speed} km/h</div>
+            </div>
+        </div>
+    </div>"""
+
+    data_uri = "data:text/html;charset=utf-8," + urllib.parse.quote(html)
+    st.iframe(data_uri, height=110)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -238,8 +277,8 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 # TABS
 # ══════════════════════════════════════════════════════════════════
 
-TAB_NAMES = ["01  STRATEGY", "02  DRIVER BATTLE", "03  STINT TELEMETRY", "04  TRACK ANALYSIS",
-             "05  SC SIMULATOR", "06  UNDERCUT", "07  CAR TELEMETRY", "08  AI ASSISTANT"]
+TAB_NAMES = ["STRATEGY", "DRIVER BATTLE", "STINT TELEMETRY", "TRACK ANALYSIS",
+             "SC SIMULATOR", "UNDERCUT", "CAR TELEMETRY", "AI ASSISTANT"]
 active_tab = st.radio("tab_nav", TAB_NAMES, horizontal=True, label_visibility="collapsed")
 
 
@@ -247,17 +286,17 @@ active_tab = st.radio("tab_nav", TAB_NAMES, horizontal=True, label_visibility="c
 # TAB 1 — STRATEGY (existing refactored)
 # ══════════════════════════════════════════════════════════════════
 
-if active_tab == "01  STRATEGY":
+if active_tab == "STRATEGY":
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         sd1 = st.selectbox("Driver", DRIVERS_LIST, index=DRIVERS_LIST.index("VER"),
                            format_func=lambda d: f"{d}  ·  {_team_name(d)}",
                            key="s_driver")
         st.markdown(
-            f"<div style='display:flex;align-items:center;gap:6px;margin-top:2px;padding-left:2px;'>"
+            f"<div style='display:flex;align-items:center;gap:10px;margin-top:4px;padding-left:4px;'>"
             f"<span class='driver-dot' style='color:{_team_color(sd1)};'></span>"
-            f"<span style='color:var(--text-primary);font-weight:600;font-size:0.8rem;'>{sd1}</span>"
-            f"<span style='color:var(--text-dim);font-size:0.65rem;'>{_team_name(sd1)}</span></div>",
+            f"<span style='color:var(--text-primary);font-weight:700;font-size:0.85rem;'>{sd1}</span>"
+            f"<span style='color:var(--text-dim);font-size:0.7rem;'>{_team_name(sd1)}</span></div>",
             unsafe_allow_html=True,
         )
     with c2:
@@ -266,6 +305,8 @@ if active_tab == "01  STRATEGY":
         sl1 = st.number_input("Race Laps", 10, 80, 52, step=1, key="s_laps")
     with c4:
         sm1 = st.number_input("Simulations", 10, 500, 30, step=10, key="s_mc")
+
+    st.markdown("<div style='height:0.6rem'></div>", unsafe_allow_html=True)
 
     sc_col, dnf_col, btn_col = st.columns([1, 1, 1.5])
     with sc_col:
@@ -362,26 +403,26 @@ if active_tab == "01  STRATEGY":
 # TAB 2 — DRIVER BATTLE (existing, preserved)
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "02  DRIVER BATTLE":
+elif active_tab == "DRIVER BATTLE":
     col_d1, col_d2 = st.columns(2)
     with col_d1:
         d1 = st.selectbox("Driver 1", DRIVERS_LIST, index=DRIVERS_LIST.index("VER"), key="d1",
                           format_func=lambda d: f"{d}  ·  {_team_name(d)}")
         st.markdown(
-            f"<div style='display:flex;align-items:center;gap:6px;margin-top:2px;padding-left:2px;'>"
+            f"<div style='display:flex;align-items:center;gap:10px;margin-top:4px;padding-left:4px;'>"
             f"<span class='driver-dot' style='color:{_team_color(d1)};'></span>"
-            f"<span style='color:var(--text-primary);font-weight:600;font-size:0.8rem;'>{d1}</span>"
-            f"<span style='color:var(--text-dim);font-size:0.65rem;'>{_team_name(d1)}</span></div>",
+            f"<span style='color:var(--text-primary);font-weight:700;font-size:0.85rem;'>{d1}</span>"
+            f"<span style='color:var(--text-dim);font-size:0.7rem;'>{_team_name(d1)}</span></div>",
             unsafe_allow_html=True,
         )
     with col_d2:
         d2 = st.selectbox("Driver 2", DRIVERS_LIST, index=DRIVERS_LIST.index("HAM"), key="d2",
                           format_func=lambda d: f"{d}  ·  {_team_name(d)}")
         st.markdown(
-            f"<div style='display:flex;align-items:center;gap:6px;margin-top:2px;padding-left:2px;'>"
+            f"<div style='display:flex;align-items:center;gap:10px;margin-top:4px;padding-left:4px;'>"
             f"<span class='driver-dot' style='color:{_team_color(d2)};'></span>"
-            f"<span style='color:var(--text-primary);font-weight:600;font-size:0.8rem;'>{d2}</span>"
-            f"<span style='color:var(--text-dim);font-size:0.65rem;'>{_team_name(d2)}</span></div>",
+            f"<span style='color:var(--text-primary);font-weight:700;font-size:0.85rem;'>{d2}</span>"
+            f"<span style='color:var(--text-dim);font-size:0.7rem;'>{_team_name(d2)}</span></div>",
             unsafe_allow_html=True,
         )
     if d1 == d2:
@@ -448,7 +489,7 @@ elif active_tab == "02  DRIVER BATTLE":
 # TAB 3 — STINT TELEMETRY (enhanced stint sim)
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "03  STINT TELEMETRY":
+elif active_tab == "STINT TELEMETRY":
     ca, cb, cc, cd = st.columns(4)
     with ca:
         sd3 = st.selectbox("Driver", DRIVERS_LIST, index=DRIVERS_LIST.index("VER"), key="s3",
@@ -504,7 +545,7 @@ elif active_tab == "03  STINT TELEMETRY":
 # TAB 4 — TRACK ANALYSIS (existing, preserved with weather viz)
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "04  TRACK ANALYSIS":
+elif active_tab == "TRACK ANALYSIS":
     ca, cb, cc = st.columns(3)
     with ca:
         ta_track = st.selectbox("Track", tracks, index=tracks.index("British Grand Prix"), key="ta_track")
@@ -626,7 +667,7 @@ elif active_tab == "04  TRACK ANALYSIS":
 # TAB 5 — SC SIMULATOR
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "05  SC SIMULATOR":
+elif active_tab == "SC SIMULATOR":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>🚨</span>"
@@ -706,7 +747,7 @@ elif active_tab == "05  SC SIMULATOR":
 # TAB 6 — UNDERCUT / OVERCUT ANALYZER
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "06  UNDERCUT":
+elif active_tab == "UNDERCUT":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>✂️</span>"
@@ -811,7 +852,7 @@ elif active_tab == "06  UNDERCUT":
 # TAB 7 — CAR TELEMETRY
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "07  CAR TELEMETRY":
+elif active_tab == "CAR TELEMETRY":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>📊</span>"
@@ -880,7 +921,7 @@ elif active_tab == "07  CAR TELEMETRY":
 # TAB 8 — AI STRATEGY ASSISTANT
 # ══════════════════════════════════════════════════════════════════
 
-elif active_tab == "08  AI ASSISTANT":
+elif active_tab == "AI ASSISTANT":
     st.markdown(
         "<div style='display:flex;align-items:center;gap:0.6rem;'>"
         "<span style='font-size:1.5rem;'>🤖</span>"

@@ -136,9 +136,9 @@ h3::before {
 
 .tech-dot-group {
     display: flex;
-    justify-content: center;
-    gap: 1.4rem;
-    margin: 0.6rem 0 0.4rem;
+    justify-content: space-evenly;
+    margin: 0.8rem 0 0.4rem;
+    width: 100%;
 }
 .tech-dot-item {
     display: flex;
@@ -153,8 +153,6 @@ h3::before {
     box-shadow: 0 0 10px rgba(0,231,1,0.7), 0 0 20px rgba(0,231,1,0.3);
     animation: tech-pulse 2s ease-in-out infinite;
 }
-.tech-dot-item:nth-child(2) .tech-dot { animation-delay: 0.4s; }
-.tech-dot-item:nth-child(3) .tech-dot { animation-delay: 0.8s; }
 .tech-dot-label {
     color: var(--text-muted);
     font-size: 0.52rem;
@@ -389,11 +387,12 @@ section[data-testid="stMain"] div[data-testid="column"] {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   TAB NAVIGATION (radio styled as tabs — keeps if/elif isolation)
+   TAB NAVIGATION (radio styled as tabs — CSS counter number boxes)
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* Radio group container → clean tab bar */
 div[data-testid="stRadio"] > div[role="radiogroup"] {
+    counter-reset: tab-counter;
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: wrap;
@@ -415,11 +414,11 @@ label[data-testid="stRadioOption"] {
     letter-spacing: 0.8px;
     padding: 0.6rem 0.9rem;
     border-bottom: 2px solid transparent;
-    transition: all 0.25s;
+    transition: all 0.2s;
     text-transform: uppercase;
     cursor: pointer;
     background: transparent !important;
-    gap: 0.4rem !important;
+    gap: 8px !important;
     margin: 0 !important;
     min-height: unset !important;
 }
@@ -437,14 +436,37 @@ label[data-testid="stRadioOption"][data-selected="true"] {
     background: transparent !important;
 }
 
+/* Number badge via CSS counter — grey box */
+label[data-testid="stRadioOption"]::before {
+    counter-increment: tab-counter;
+    content: counter(tab-counter, decimal-leading-zero);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 20px;
+    padding: 0 4px;
+    background: rgba(128, 128, 128, 0.12);
+    border: 1px solid rgba(128, 128, 128, 0.25);
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+/* Active tab number badge — brighter */
+label[data-testid="stRadioOption"][data-selected="true"]::before {
+    background: rgba(128, 128, 128, 0.2);
+    border-color: rgba(128, 128, 128, 0.4);
+    color: var(--text-primary);
+}
+
 /* ── Hide the custom Streamlit radio circle ── */
-/* Streamlit 1.59 renders custom emotion divs for radio circles.
-   The circle is the first child div inside the label's content container. */
 label[data-testid="stRadioOption"] > div:last-child > div:first-child > div:first-child {
     display: none !important;
 }
 
-/* Hide the native radio input (clipped by Streamlit, but belt-and-suspenders) */
+/* Hide the native radio input */
 label[data-testid="stRadioOption"] input[type="radio"] {
     display: none !important;
 }
@@ -668,6 +690,10 @@ div[data-testid="stRadio"] > label {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   ACTIVE CIRCUIT CARD (sidebar — rotates every 10s with transition)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════
    SECTION LABEL
    ═══════════════════════════════════════════════════════════════════════ */
 
@@ -813,7 +839,7 @@ div[data-testid="stSpinner"] .st-emotion-cache-1dp5vir {
 
 @media (max-width: 768px) {
     .main > div { padding: 1rem; }
-    div[data-testid="stRadio"] label { padding: 0.5rem 0.8rem; font-size: 0.65rem; }
+    div[data-testid="stRadio"] label { padding: 0.5rem 0.5rem; font-size: 0.6rem; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
