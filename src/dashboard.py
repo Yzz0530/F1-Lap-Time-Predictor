@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 import time
-import urllib.parse
 from typing import Any
 
 import matplotlib.patches as mpatches
@@ -16,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from strategy_optimizer import F1StrategyOptimizer
 from race_physics import PIT_LOSS_DEFAULT, simulate_sc_scenario, undercut_benefit, fuel_effect
 from undercut_analyzer import UndercutAnalyzer
@@ -161,7 +161,7 @@ def _render_active_circuit():
 
     old_html = ""
     if prev:
-        old_html = f'''<div class="old" style="position:absolute;inset:0;">
+        old_html = f'''<div class="old" style="position:absolute;inset:0;text-align:center;">
             <div style="color:rgba(255,255,255,0.9);font-weight:600;font-size:0.85rem;">{prev}</div>
             <div style="color:rgba(255,255,255,0.5);font-size:0.6rem;margin-top:0.75rem;">{p_len} km · {p_corners} corners · {p_speed} km/h</div>
         </div>'''
@@ -179,12 +179,8 @@ def _render_active_circuit():
             .new{{animation:newFade 0.45s ease-out 0.35s both;}}
             body{{margin:0;background:transparent;}}
         </style>
-        <div style="
-            color:rgba(255,255,255,0.35);font-size:0.6rem;
-            letter-spacing:0.5px;text-transform:uppercase;
-            margin-bottom:0.55rem;
-        ">Active Circuit</div>
-        <div style="position:relative;min-height:3.2rem;">
+        <div style="color:rgba(255,255,255,0.35);font-size:0.6rem;letter-spacing:0.5px;text-transform:uppercase;">Active Circuit</div><br>
+        <div style="position:relative;min-height:1rem;text-align:center;">
             {old_html}
             <div class="{new_cls}">
                 <div style="color:rgba(255,255,255,0.9);font-weight:600;font-size:0.85rem;">{name}</div>
@@ -193,8 +189,7 @@ def _render_active_circuit():
         </div>
     </div>"""
 
-    data_uri = "data:text/html;charset=utf-8," + urllib.parse.quote(html)
-    st.iframe(data_uri, height=110)
+    components.html(html, height=72)
 
 
 # ══════════════════════════════════════════════════════════════════
