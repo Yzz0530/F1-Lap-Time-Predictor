@@ -7,7 +7,7 @@ Built as a portfolio project targeting motorsport analytics — combining ML, da
 ## Features
 
 | Tab | Description |
-|---|---|
+|-----|-------------|
 | **STRATEGY** | Monte Carlo pit‑strategy simulation (1‑stop / 2‑stop / undercut) with safety‑car & DNF probability |
 | **DRIVER BATTLE** | Head‑to‑head driver comparison across quali, race pace, stint length |
 | **STINT TELEMETRY** | Stint‑level telemetry: speed, throttle, brake, gear, DRS per lap |
@@ -16,6 +16,7 @@ Built as a portfolio project targeting motorsport analytics — combining ML, da
 | **UNDERCUT** | Undercut / overcut analysis with gap modeling and pit‑window optimization |
 | **CAR TELEMETRY** | Per‑driver car data visualization (speed, RPM, gear, DRS) |
 | **AI ASSISTANT** | Natural‑language strategy Q&A ("Should I pit?", "What's the fastest strategy?") |
+| **RACE TIMELINE** | Stint‑by‑stint race timeline, degradation chart, key events & actionable insights |
 
 ## Performance
 
@@ -31,7 +32,7 @@ download_all_races.py    → Downloads F1 session data via fastf1
 prepare_enhanced_data.py → Cleans data & engineers features (circuit, weather, sector speeds)
 train.py                 → Optuna‑tuned XGBoost (absolute lap‑time regression)
 strategy_optimizer.py    → Monte Carlo strategy simulation (physics + ML blend)
-dashboard.py             → Streamlit UI (8 tabs, interactive controls)
+dashboard.py             → Streamlit UI (9 tabs, interactive controls)
 ```
 
 ## Tech Stack

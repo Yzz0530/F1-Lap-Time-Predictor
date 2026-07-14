@@ -27,17 +27,17 @@ COMPOUND_COLORS: dict[str, str] = {
     "SOFT": "#e10600", "MEDIUM": "#ffb800", "HARD": "#a0a0a0",
 }
 TEAMS: dict[str, tuple[str, str]] = {
-    "VER": ("#1e41ff", "Red Bull"), "HAD": ("#1e41ff", "Red Bull"),
-    "LEC": ("#dc0000", "Ferrari"), "HAM": ("#dc0000", "Ferrari"),
-    "RUS": ("#00d2be", "Mercedes"), "ANT": ("#00d2be", "Mercedes"),
+    "VER": ("#3671c6", "Red Bull"), "HAD": ("#3671c6", "Red Bull"),
+    "LEC": ("#e8002d", "Ferrari"), "HAM": ("#e8002d", "Ferrari"),
+    "RUS": ("#27f4d2", "Mercedes"), "ANT": ("#27f4d2", "Mercedes"),
     "NOR": ("#ff8000", "McLaren"), "PIA": ("#ff8000", "McLaren"),
-    "ALO": ("#00665e", "Aston Martin"), "STR": ("#00665e", "Aston Martin"),
-    "GAS": ("#fd7cac", "Alpine"), "COL": ("#fd7cac", "Alpine"),
-    "OCO": ("#b6b6b6", "Haas"), "BEA": ("#b6b6b6", "Haas"),
-    "LAW": ("#4b2db8", "RB"), "LIN": ("#4b2db8", "RB"),
-    "ALB": ("#005aff", "Williams"), "SAI": ("#005aff", "Williams"),
-    "HUL": ("#00e701", "Audi"), "BOR": ("#00e701", "Audi"),
-    "PER": ("#898989", "Cadillac"), "BOT": ("#898989", "Cadillac"),
+    "ALO": ("#229971", "Aston Martin"), "STR": ("#229971", "Aston Martin"),
+    "GAS": ("#00a1e8", "Alpine"), "COL": ("#00a1e8", "Alpine"),
+    "OCO": ("#dee1e2", "Haas"), "BEA": ("#dee1e2", "Haas"),
+    "LAW": ("#6692ff", "Racing Bulls"), "LIN": ("#6692ff", "Racing Bulls"),
+    "ALB": ("#1868db", "Williams"), "SAI": ("#1868db", "Williams"),
+    "HUL": ("#ff2d00", "Audi"), "BOR": ("#ff2d00", "Audi"),
+    "PER": ("#aaaaad", "Cadillac"), "BOT": ("#aaaaad", "Cadillac"),
 }
 DRIVERS_LIST = sorted(TEAMS.keys())
 _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
