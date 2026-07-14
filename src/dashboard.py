@@ -20,6 +20,7 @@ from strategy_optimizer import F1StrategyOptimizer
 from race_physics import PIT_LOSS_DEFAULT, simulate_sc_scenario, undercut_benefit, fuel_effect
 from undercut_analyzer import UndercutAnalyzer
 from strategy_assistant import StrategyAssistant
+from race_timeline import render_race_timeline
 
 F1_RED = "#e10600"
 COMPOUND_COLORS: dict[str, str] = {
@@ -273,7 +274,8 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 # ══════════════════════════════════════════════════════════════════
 
 TAB_NAMES = ["STRATEGY", "DRIVER BATTLE", "STINT TELEMETRY", "TRACK ANALYSIS",
-             "SC SIMULATOR", "UNDERCUT", "CAR TELEMETRY", "AI ASSISTANT"]
+             "SC SIMULATOR", "UNDERCUT", "CAR TELEMETRY", "AI ASSISTANT",
+             "RACE TIMELINE"]
 active_tab = st.radio("tab_nav", TAB_NAMES, horizontal=True, label_visibility="collapsed")
 
 
@@ -420,6 +422,7 @@ elif active_tab == "DRIVER BATTLE":
             f"<span style='color:var(--text-dim);font-size:0.7rem;'>{_team_name(d2)}</span></div>",
             unsafe_allow_html=True,
         )
+    st.markdown("<br>", unsafe_allow_html=True)
     if d1 == d2:
         st.info("Select two different drivers.")
     else:
@@ -496,6 +499,8 @@ elif active_tab == "STINT TELEMETRY":
     with cd:
         st3 = st.selectbox("Track", tracks, index=tracks.index("British Grand Prix"), key="s3t")
 
+    st.markdown("<br>", unsafe_allow_html=True)
+
     stint_run = run_detailed(st3, sl3, sd3, ((sc3, sl3),))
     if stint_run and stint_run.get("stint_details"):
         sd = stint_run["stint_details"][0]
@@ -548,6 +553,8 @@ elif active_tab == "TRACK ANALYSIS":
         ta_year = st.selectbox("Year", ["All", "2026", "2025"], key="ta_year")
     with cc:
         ta_compound = st.selectbox("Compound", ["All", "SOFT", "MEDIUM", "HARD"], key="ta_compound")
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     df_raw = pd.read_csv(os.path.join(_BASE, "data", "all_races_master.csv"))
     df_track = df_raw[df_raw["Race"] == ta_track].copy()
@@ -999,3 +1006,10 @@ elif active_tab == "AI ASSISTANT":
 - *Simulate a 20-lap stint on SOFT*
 - *What's the optimal pit window?*
 """)
+
+# ══════════════════════════════════════════════════════════════════
+# TAB 9 — RACE TIMELINE
+# ══════════════════════════════════════════════════════════════════
+
+elif active_tab == "RACE TIMELINE":
+    render_race_timeline(opt, tracks, DRIVERS_LIST, _team_name, COMPOUND_COLORS, plt, pd, st)
