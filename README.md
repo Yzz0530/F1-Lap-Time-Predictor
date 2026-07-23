@@ -43,7 +43,19 @@ dashboard.py             → Streamlit UI (9 tabs, interactive controls)
 | **Simulation** | Monte Carlo, custom physics engine |
 | **UI** | Streamlit 1.59.0, custom CSS (carbon‑fibre theme) |
 | **Data** | fastf1, pandas, numpy |
-| **Testing** | pytest (24 unit tests) |
+| **CI/CD** | GitHub Actions (auto‑update pipeline) |
+| **Deployment** | Streamlit Cloud |
+
+## Automation
+
+Data pipeline runs automatically every Monday at 9am UTC via GitHub Actions:
+
+1. **Download** → Fetches new race data from fastf1
+2. **Prepare** → Cleans data & engineers features
+3. **Train** → Retrains XGBoost with Optuna hyperparameter optimization
+4. **Deploy** → Commits updated data + model, Streamlit Cloud auto‑redeploys
+
+Manual trigger available in GitHub Actions tab.
 
 ## Setup
 
