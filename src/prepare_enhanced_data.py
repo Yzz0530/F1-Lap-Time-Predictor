@@ -67,6 +67,7 @@ RACE_TO_CIRCUIT: dict[tuple[int, str], str] = {
     (2026, "Barcelona Grand Prix"): "Circuit de Barcelona-Catalunya",
     (2026, "Austrian Grand Prix"): "Red Bull Ring",
     (2026, "British Grand Prix"): "Silverstone Circuit",
+    (2026, "Belgian Grand Prix"): "Circuit de Spa-Francorchamps",
 }
 
 # fastf1 short name → location for weather loading (built from schedule below)
