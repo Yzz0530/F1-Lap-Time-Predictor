@@ -68,6 +68,18 @@ RACE_TO_CIRCUIT: dict[tuple[int, str], str] = {
     (2026, "Austrian Grand Prix"): "Red Bull Ring",
     (2026, "British Grand Prix"): "Silverstone Circuit",
     (2026, "Belgian Grand Prix"): "Circuit de Spa-Francorchamps",
+    (2026, "Hungarian Grand Prix"): "Hungaroring",
+    (2026, "Dutch Grand Prix"): "Circuit Zandvoort",
+    (2026, "Italian Grand Prix"): "Monza",
+    (2026, "Spanish Grand Prix"): "Madrid Street Circuit",
+    (2026, "Azerbaijan Grand Prix"): "Baku City Circuit",
+    (2026, "Singapore Grand Prix"): "Marina Bay Street Circuit",
+    (2026, "United States Grand Prix"): "Circuit of the Americas",
+    (2026, "Mexico City Grand Prix"): "Autodromo Hermanos Rodriguez",
+    (2026, "São Paulo Grand Prix"): "Interlagos",
+    (2026, "Las Vegas Grand Prix"): "Las Vegas Strip Circuit",
+    (2026, "Qatar Grand Prix"): "Losail International Circuit",
+    (2026, "Abu Dhabi Grand Prix"): "Yas Marina Circuit",
 }
 
 # fastf1 short name → location for weather loading (built from schedule below)
