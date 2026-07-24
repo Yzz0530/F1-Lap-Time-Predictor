@@ -1,0 +1,304 @@
+"""
+F1 Championship Standings Tab — Driver and Constructor standings with progression.
+
+Data source: fastf1 (live API) — computes points from race/sprint results.
+"""
+from __future__ import annotations
+
+import warnings
+from typing import Any
+
+import fastf1
+import numpy as np
+import pandas as pd
+import streamlit as st
+import matplotlib.pyplot as plt
+
+warnings.filterwarnings("ignore")
+
+TEAM_COLORS: dict[str, str] = {
+    "Red Bull Racing": "#3671c6", "Red Bull": "#3671c6",
+    "Ferrari": "#e8002d",
+    "Mercedes": "#27f4d2",
+    "McLaren": "#ff8000",
+    "Aston Martin": "#229971",
+    "Alpine": "#00a1e8",
+    "Haas F1 Team": "#dee1e2", "Haas": "#dee1e2",
+    "Racing Bulls": "#6692ff", "RB": "#6692ff",
+    "Williams": "#1868db",
+    "Audi": "#ff2d00",
+    "Cadillac": "#aaaaad",
+}
+
+# Points systems
+RACE_POINTS = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+SPRINT_POINTS = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
+FASTEST_LAP_POINT = 1  # P1-P10 with fastest lap gets +1
+
+
+def _team_color(team: str) -> str:
+    return TEAM_COLORS.get(team, "#666666")
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _get_schedule(year: int) -> pd.DataFrame:
+    schedule = fastf1.get_event_schedule(year)
+    return schedule[schedule["EventFormat"] != "testing"].copy()
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _load_all_standings(year: int) -> pd.DataFrame:
+    """Load all race/sprint results for a year and compute cumulative standings."""
+    schedule = _get_schedule(year)
+    all_records = []
+
+    for _, event in schedule.iterrows():
+        race_name = event["EventName"]
+        is_sprint = "sprint" in str(event.get("EventFormat", "")).lower()
+
+        # ── Race results ──────────────────────────────────────────────────
+        try:
+            session = fastf1.get_session(year, race_name, "R")
+            session.load(laps=False, telemetry=False)
+            results = session.results
+            for _, row in results.iterrows():
+                pos = row.get("Position")
+                if pd.isna(pos):
+                    continue
+                pos = int(pos)
+                pts = RACE_POINTS.get(pos, 0)
+                all_records.append({
+                    "Race": race_name,
+                    "Session": "Race",
+                    "Driver": row.get("FullName", ""),
+                    "Team": row.get("TeamName", ""),
+                    "Position": pos,
+                    "Points": pts,
+                    "Status": row.get("Status", ""),
+                })
+        except Exception:
+            pass
+
+        # ── Sprint race results ───────────────────────────────────────────
+        if is_sprint:
+            try:
+                sprint = fastf1.get_session(year, race_name, "Sprint")
+                sprint.load(laps=False, telemetry=False)
+                results = sprint.results
+                for _, row in results.iterrows():
+                    pos = row.get("Position")
+                    if pd.isna(pos):
+                        continue
+                    pos = int(pos)
+                    pts = SPRINT_POINTS.get(pos, 0)
+                    all_records.append({
+                        "Race": race_name,
+                        "Session": "Sprint",
+                        "Driver": row.get("FullName", ""),
+                        "Team": row.get("TeamName", ""),
+                        "Position": pos,
+                        "Points": pts,
+                        "Status": row.get("Status", ""),
+                    })
+            except Exception:
+                pass
+
+    if not all_records:
+        return pd.DataFrame()
+
+    return pd.DataFrame(all_records)
+
+
+def _compute_driver_standings(df: pd.DataFrame) -> pd.DataFrame:
+    """Compute driver standings with cumulative points per race."""
+    if df.empty:
+        return pd.DataFrame()
+
+    # Sort races by order in schedule
+    race_order = df["Race"].unique().tolist()
+    race_idx = {r: i for i, r in enumerate(race_order)}
+    df = df.copy()
+    df["RaceIdx"] = df["Race"].map(race_idx)
+
+    # Pivot: one row per driver, one column per race (points earned)
+    driver_totals = df.groupby(["Driver", "Team"]).agg(
+        TotalPoints=("Points", "sum"),
+        Wins=("Position", lambda x: (x == 1).sum()),
+        Podiums=("Position", lambda x: (x <= 3).sum()),
+        Poles=("Position", "count"),  # placeholder, actual poles from qualifying
+    ).reset_index()
+
+    # Cumulative points progression
+    progression = df.pivot_table(
+        index=["Driver", "Team"], columns="Race", values="Points", aggfunc="sum"
+    ).fillna(0)
+
+    # Reorder columns by race order
+    ordered = [r for r in race_order if r in progression.columns]
+    progression = progression[ordered]
+    progression = progression.cumsum(axis=1)
+
+    # Add total
+    progression["Total"] = progression.sum(axis=1)
+
+    # Sort by total
+    progression = progression.sort_values("Total", ascending=False).reset_index()
+
+    return progression
+
+
+def _compute_constructor_standings(df: pd.DataFrame) -> pd.DataFrame:
+    """Compute constructor standings."""
+    if df.empty:
+        return pd.DataFrame()
+
+    race_order = df["Race"].unique().tolist()
+
+    # Group by team
+    constructor_totals = df.groupby("Team").agg(
+        TotalPoints=("Points", "sum"),
+        Wins=("Position", lambda x: (x == 1).sum()),
+        Podiums=("Position", lambda x: (x <= 3).sum()),
+    ).reset_index()
+
+    # Cumulative progression
+    progression = df.pivot_table(
+        index="Team", columns="Race", values="Points", aggfunc="sum"
+    ).fillna(0)
+
+    ordered = [r for r in race_order if r in progression.columns]
+    progression = progression[ordered]
+    progression = progression.cumsum(axis=1)
+
+    progression["Total"] = progression.sum(axis=1)
+    progression = progression.sort_values("Total", ascending=False).reset_index()
+
+    return progression
+
+
+def _render_points_chart(standings: pd.DataFrame, title: str, is_constructor: bool = False):
+    """Render cumulative points progression chart."""
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fig.patch.set_facecolor("#0f0f0f")
+    ax.set_facecolor("#0f0f0f")
+
+    # Get race columns (exclude identity/total columns)
+    id_cols = ["Driver", "Team", "Total"] if not is_constructor else ["Team", "Total"]
+    race_cols = [c for c in standings.columns if c not in id_cols and c != "index"]
+
+    if not race_cols:
+        plt.close(fig)
+        return
+
+    # Plot top drivers/teams
+    top_n = min(10, len(standings))
+    for i in range(top_n):
+        row = standings.iloc[i]
+        name = row.get("Driver") if not is_constructor else row.get("Team")
+        team = row.get("Team", "") if not is_constructor else row.get("Team", "")
+        color = _team_color(team)
+        y_vals = [0] + [row[c] for c in race_cols]
+
+        ax.plot(range(len(y_vals)), y_vals, marker="o", markersize=4,
+                color=color, linewidth=2, label=name, alpha=0.9)
+
+    # X-axis labels
+    x_labels = ["Pre"] + [r.replace(" Grand Prix", " GP").replace("São Paulo", "SPA")[:10] for r in race_cols]
+    ax.set_xticks(range(len(x_labels)))
+    ax.set_xticklabels(x_labels, color="#999999", fontsize=8, rotation=45, ha="right")
+
+    ax.tick_params(axis="y", colors="#999999")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_color("#333333")
+    ax.spines["left"].set_color("#333333")
+
+    ax.legend(loc="upper left", fontsize=8, facecolor="#1a1a1a", edgecolor="#333333",
+              labelcolor="#eeeeee", ncol=2)
+
+    plt.title(title, color="#eeeeee", fontsize=14, fontweight="bold", pad=15)
+    plt.ylabel("Cumulative Points", color="#999999", fontsize=10)
+    plt.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
+
+
+def _render_standings_table(standings: pd.DataFrame, is_constructor: bool = False):
+    """Render a styled standings table."""
+    if standings.empty:
+        st.info("No standings data available.")
+        return
+
+    # Build display table
+    table = pd.DataFrame()
+    table["Pos"] = range(1, len(standings) + 1)
+
+    if is_constructor:
+        table["Team"] = standings["Team"]
+        table["Points"] = standings["Total"].astype(int)
+    else:
+        table["Driver"] = standings["Driver"]
+        table["Team"] = standings["Team"]
+        table["Points"] = standings["Total"].astype(int)
+
+    # Style with team colors
+    def _color_row(row):
+        team = row.get("Team", "")
+        c = _team_color(team)
+        return [f"background-color: {c}22"] * len(row)
+
+    styled = table.style.apply(_color_row, axis=1)
+    st.dataframe(styled, use_container_width=True, hide_index=True, height=min(38 * len(table) + 40, 500))
+
+
+def render_standings_tab():
+    """Render the championship standings tab."""
+    # ── Year selector ─────────────────────────────────────────────────────
+    s_year = st.selectbox("Season", [2026, 2025], key="standings_year")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Tab toggle: Driver / Constructor ──────────────────────────────────
+    standings_type = st.radio("Standings", ["Driver Championship", "Constructor Championship"],
+                              horizontal=True, key="standings_type")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Load standings ────────────────────────────────────────────────────
+    with st.spinner(f"Loading {s_year} championship data..."):
+        raw = _load_all_standings(s_year)
+
+    if raw.empty:
+        st.info(f"No {s_year} race data available yet.")
+        return
+
+    # ── Summary metrics ───────────────────────────────────────────────────
+    races_completed = raw["Race"].nunique()
+    total_points = raw["Points"].sum()
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Races Completed", races_completed)
+    m2.metric("Total Points Awarded", int(total_points))
+
+    if standings_type == "Driver Championship":
+        driver_standings = _compute_driver_standings(raw)
+        if not driver_standings.empty:
+            leader = driver_standings.iloc[0]
+            m3.metric("Leader", leader["Driver"], f"{int(leader['Total'])} pts")
+            st.markdown("<br>", unsafe_allow_html=True)
+            _render_points_chart(driver_standings, f"{s_year} Driver Championship Progression")
+            st.markdown("<br>", unsafe_allow_html=True)
+            _render_standings_table(driver_standings, is_constructor=False)
+        else:
+            m3.metric("Leader", "—", "—")
+    else:
+        constructor_standings = _compute_constructor_standings(raw)
+        if not constructor_standings.empty:
+            leader = constructor_standings.iloc[0]
+            m3.metric("Leader", leader["Team"], f"{int(leader['Total'])} pts")
+            st.markdown("<br>", unsafe_allow_html=True)
+            _render_points_chart(constructor_standings, f"{s_year} Constructor Championship Progression", is_constructor=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            _render_standings_table(constructor_standings, is_constructor=True)
+        else:
+            m3.metric("Leader", "—", "—")

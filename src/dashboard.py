@@ -21,6 +21,8 @@ from race_physics import PIT_LOSS_DEFAULT, simulate_sc_scenario, undercut_benefi
 from undercut_analyzer import UndercutAnalyzer
 from strategy_assistant import StrategyAssistant
 from race_timeline import render_race_timeline
+from results import render_results_tab
+from standings import render_standings_tab
 
 F1_RED = "#e10600"
 COMPOUND_COLORS: dict[str, str] = {
@@ -275,7 +277,7 @@ st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
 
 TAB_NAMES = ["STRATEGY", "DRIVER BATTLE", "STINT TELEMETRY", "TRACK ANALYSIS",
              "SC SIMULATOR", "UNDERCUT", "CAR TELEMETRY", "AI ASSISTANT",
-             "RACE TIMELINE"]
+             "RACE TIMELINE", "RESULTS", "STANDINGS"]
 active_tab = st.radio("tab_nav", TAB_NAMES, horizontal=True, label_visibility="collapsed")
 
 
@@ -1013,3 +1015,9 @@ elif active_tab == "AI ASSISTANT":
 
 elif active_tab == "RACE TIMELINE":
     render_race_timeline(opt, tracks, DRIVERS_LIST, _team_name, COMPOUND_COLORS, plt, pd, st)
+
+elif active_tab == "RESULTS":
+    render_results_tab()
+
+elif active_tab == "STANDINGS":
+    render_standings_tab()
