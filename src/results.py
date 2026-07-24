@@ -1,7 +1,7 @@
 """
 F1 Race Results Tab — Session results for any track/session combination.
 
-Supports: FP1, Qualifying, Sprint Qualifying, Sprint Race, Race
+Supports: FP1, FP2, FP3, Q, Sprint Qualifying, Sprint, R
 Data source: fastf1 (live API)
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ TEAM_COLORS: dict[str, str] = {
     "Cadillac": "#aaaaad",
 }
 
-SESSION_TYPES = ["FP1", "Qualifying", "Sprint Qualifying", "Sprint Race", "Race"]
+SESSION_TYPES = ["FP1", "FP2", "FP3", "Q", "Sprint Qualifying", "Sprint", "R"]
 
 # ── F1 points system ──────────────────────────────────────────────────────
 RACE_POINTS = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
@@ -89,7 +89,7 @@ def _build_results_table(results: pd.DataFrame, session_type: str) -> pd.DataFra
     table["No"] = results["DriverNumber"]
     table["Team"] = results["TeamName"]
 
-    if session_type in ("Qualifying", "Sprint Qualifying"):
+    if session_type in ("Q", "Sprint Qualifying"):
         table["Q1"] = results["Q1"].apply(_fmt_time)
         table["Q2"] = results["Q2"].apply(_fmt_time)
         table["Q3"] = results["Q3"].apply(_fmt_time)
@@ -97,7 +97,7 @@ def _build_results_table(results: pd.DataFrame, session_type: str) -> pd.DataFra
         pole_q3 = results["Q3"].iloc[0] if len(results) > 0 else None
         table["Gap"] = results["Q3"].apply(lambda x: _fmt_gap(x, pole_q3))
 
-    elif session_type == "Race":
+    elif session_type == "R":
         table["Grid"] = results["GridPosition"].astype("Int64")
         table["Points"] = results["Points"]
         table["Status"] = results["Status"]
@@ -105,14 +105,14 @@ def _build_results_table(results: pd.DataFrame, session_type: str) -> pd.DataFra
         leader_time = results["Time"].iloc[0] if len(results) > 0 else None
         table["Gap"] = results["Time"].apply(lambda x: _fmt_gap(x, leader_time))
 
-    elif session_type == "Sprint Race":
+    elif session_type == "Sprint":
         table["Grid"] = results["GridPosition"].astype("Int64") if "GridPosition" in results.columns else "—"
         table["Points"] = results["Points"]
         table["Status"] = results["Status"]
         leader_time = results["Time"].iloc[0] if len(results) > 0 else None
         table["Gap"] = results["Time"].apply(lambda x: _fmt_gap(x, leader_time))
 
-    elif session_type == "FP1":
+    elif session_type in ("FP1", "FP2", "FP3"):
         table["Best"] = results["BestLapTime"].apply(_fmt_time) if "BestLapTime" in results.columns else "—"
         table["Laps"] = results["Laps"] if "Laps" in results.columns else 0
 
@@ -223,7 +223,7 @@ def render_results_tab():
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Drivers", len(results))
 
-    if r_session == "Race" and "Status" in results.columns:
+    if r_session == "R" and "Status" in results.columns:
         finishers = len(results[results["Status"] == "Finished"])
         m2.metric("Finishers", finishers)
         m3.metric("DNFs", len(results) - finishers)
@@ -233,7 +233,7 @@ def render_results_tab():
             if len(best_mover) > 0:
                 mover = best_mover.loc[best_mover["Gain"].idxmax()]
                 m4.metric("Best Mover", f"{mover['FullName']}", f"+{int(mover['Gain'])} places")
-    elif r_session == "Sprint Race" and "Status" in results.columns:
+    elif r_session == "Sprint" and "Status" in results.columns:
         finishers = len(results[results["Status"] == "Finished"])
         m2.metric("Finishers", finishers)
         m3.metric("DNFs", len(results) - finishers)
