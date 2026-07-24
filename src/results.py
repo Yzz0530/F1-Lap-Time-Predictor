@@ -186,20 +186,13 @@ def render_results_tab():
         return sorted(schedule["EventName"].tolist())
 
     # ── Layout ────────────────────────────────────────────────────────────
-    tracks = _get_schedule(2026)
-
+    # Year first, then tracks adapt to selected year
     c1, c2 = st.columns(2)
-    with c1:
-        r_track = st.selectbox("Track", tracks, index=tracks.index("Belgian Grand Prix") if "Belgian Grand Prix" in tracks else 0, key="res_track")
     with c2:
         r_year = st.selectbox("Year", [2026, 2025], key="res_year")
-
-    # Update tracks for selected year
     tracks_for_year = _get_schedule(r_year)
-    if r_track not in tracks_for_year:
-        r_track = tracks_for_year[0]
     with c1:
-        r_track = st.selectbox("Track", tracks_for_year, index=tracks_for_year.index(r_track) if r_track in tracks_for_year else 0, key="res_track_2")
+        r_track = st.selectbox("Track", tracks_for_year, key="res_track")
 
     st.markdown("<br>", unsafe_allow_html=True)
 

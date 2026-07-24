@@ -138,8 +138,10 @@ def _compute_driver_standings(df: pd.DataFrame) -> pd.DataFrame:
     progression = progression[ordered]
     progression = progression.cumsum(axis=1)
 
-    # Add total
-    progression["Total"] = progression.sum(axis=1)
+    # Add total — last value of cumulative sum IS the total
+    progression["Total"] = progression[ordered].iloc[:, -1] if ordered else 0
+    # For drivers who raced fewer races, recalculate properly
+    progression["Total"] = df.groupby(["Driver", "Team"])["Points"].sum().values
 
     # Sort by total
     progression = progression.sort_values("Total", ascending=False).reset_index()
@@ -170,7 +172,8 @@ def _compute_constructor_standings(df: pd.DataFrame) -> pd.DataFrame:
     progression = progression[ordered]
     progression = progression.cumsum(axis=1)
 
-    progression["Total"] = progression.sum(axis=1)
+    progression["Total"] = df.groupby("Team")["Points"].sum().values
+
     progression = progression.sort_values("Total", ascending=False).reset_index()
 
     return progression
